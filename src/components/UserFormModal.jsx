@@ -33,23 +33,34 @@ const OPCIONES_CURSO = [
 ];
 
 /**
- * Modal de registro de nuevo usuario institucional con 7 campos.
- *
- * @param {Object} props
- * @param {boolean} props.isOpen - Visibilidad del modal
- * @param {Function} props.onClose - Manejador para cerrar el modal
+ * Contenido interno del formulario.
+ * Se monta con los valores iniciales limpios al abrirse el modal.
  */
-export function UserFormModal({ isOpen, onClose }) {
+function UserFormContent({ initialData, onClose, onSave }) {
   const { show } = useToast();
+  const esEdicion = Boolean(initialData);
 
-  const [formData, setFormData] = useState({
-    tipo_doc: 'TI',
-    num_doc: '',
-    nombres: '',
-    apellidos: '',
-    rol: 'Estudiante',
-    curso_id: '10-B',
-    correo: '',
+  const [formData, setFormData] = useState(() => {
+    if (initialData) {
+      return {
+        tipo_doc: initialData.tipoDocumento || initialData.tipo_doc || 'CC',
+        num_doc: initialData.documento || initialData.num_doc || '',
+        nombres: initialData.nombres || '',
+        apellidos: initialData.apellidos || '',
+        rol: initialData.rol || 'Estudiante',
+        curso_id: initialData.curso_id || 'NA',
+        correo: initialData.correo || '',
+      };
+    }
+    return {
+      tipo_doc: 'TI',
+      num_doc: '',
+      nombres: '',
+      apellidos: '',
+      rol: 'Estudiante',
+      curso_id: '10-B',
+      correo: '',
+    };
   });
 
   const [errores, setErrores] = useState({});
@@ -85,142 +96,175 @@ export function UserFormModal({ isOpen, onClose }) {
       return;
     }
 
-    // Sin persistencia real: se notifica éxito y se reinicia
-    show(`Usuario ${formData.nombres} ${formData.apellidos} registrado exitosamente.`, 'success');
-    setFormData({
-      tipo_doc: 'TI',
-      num_doc: '',
-      nombres: '',
-      apellidos: '',
-      rol: 'Estudiante',
-      curso_id: '10-B',
-      correo: '',
-    });
-    setErrores({});
+    if (onSave) {
+      onSave({
+        ...initialData,
+        ...formData,
+        nombreCompleto: `${formData.nombres} ${formData.apellidos}`,
+        tipoDocumento: formData.tipo_doc,
+        documento: formData.num_doc,
+      });
+    }
+
+    show(
+      esEdicion
+        ? `Usuario ${formData.nombres} ${formData.apellidos} actualizado exitosamente.`
+        : `Usuario ${formData.nombres} ${formData.apellidos} registrado exitosamente.`,
+      'success',
+    );
+
     onClose();
   };
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      {/* Fila 1: Tipo y Número de documento */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field id="modal-tipo-doc" label="Tipo de Documento" required>
+          <Select
+            id="modal-tipo-doc"
+            name="tipo_doc"
+            value={formData.tipo_doc}
+            onChange={handleChange}
+            options={OPCIONES_TIPO_DOC}
+          />
+        </Field>
+
+        <Field
+          id="modal-num-doc"
+          label="Número de Documento"
+          required
+          error={errores.num_doc}
+        >
+          <input
+            id="modal-num-doc"
+            name="num_doc"
+            type="text"
+            inputMode="numeric"
+            placeholder="Ej. 1043921402"
+            value={formData.num_doc}
+            onChange={handleChange}
+            className={`w-full h-10 px-3.5 text-sm bg-surface rounded-[10px] border ${
+              errores.num_doc ? 'border-danger-line bg-danger-bg text-danger-fg' : 'border-line text-ink'
+            } focus-visible:outline-2 focus-visible:outline-brand-600`}
+          />
+        </Field>
+      </div>
+
+      {/* Fila 2: Nombres y Apellidos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field id="modal-nombres" label="Nombres" required error={errores.nombres}>
+          <input
+            id="modal-nombres"
+            name="nombres"
+            type="text"
+            placeholder="Ej. Sofía Lucía"
+            value={formData.nombres}
+            onChange={handleChange}
+            className={`w-full h-10 px-3.5 text-sm bg-surface rounded-[10px] border ${
+              errores.nombres ? 'border-danger-line bg-danger-bg text-danger-fg' : 'border-line text-ink'
+            } focus-visible:outline-2 focus-visible:outline-brand-600`}
+          />
+        </Field>
+
+        <Field id="modal-apellidos" label="Apellidos" required error={errores.apellidos}>
+          <input
+            id="modal-apellidos"
+            name="apellidos"
+            type="text"
+            placeholder="Ej. Mendoza Silva"
+            value={formData.apellidos}
+            onChange={handleChange}
+            className={`w-full h-10 px-3.5 text-sm bg-surface rounded-[10px] border ${
+              errores.apellidos ? 'border-danger-line bg-danger-bg text-danger-fg' : 'border-line text-ink'
+            } focus-visible:outline-2 focus-visible:outline-brand-600`}
+          />
+        </Field>
+      </div>
+
+      {/* Fila 3: Rol y Curso */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field id="modal-rol" label="Rol Institucional" required>
+          <Select
+            id="modal-rol"
+            name="rol"
+            value={formData.rol}
+            onChange={handleChange}
+            options={OPCIONES_ROL}
+          />
+        </Field>
+
+        <Field id="modal-curso" label="Curso o Asignación">
+          <Select
+            id="modal-curso"
+            name="curso_id"
+            value={formData.curso_id}
+            onChange={handleChange}
+            options={OPCIONES_CURSO}
+            disabled={formData.rol === 'Administrador'}
+          />
+        </Field>
+      </div>
+
+      {/* Fila 4: Correo Electrónico */}
+      <Field id="modal-correo" label="Correo Electrónico" required error={errores.correo}>
+        <input
+          id="modal-correo"
+          name="correo"
+          type="email"
+          placeholder="usuario@iedlavictoria.edu.co"
+          value={formData.correo}
+          onChange={handleChange}
+          className={`w-full h-10 px-3.5 text-sm bg-surface rounded-[10px] border ${
+            errores.correo ? 'border-danger-line bg-danger-bg text-danger-fg' : 'border-line text-ink'
+          } focus-visible:outline-2 focus-visible:outline-brand-600`}
+        />
+      </Field>
+
+      {/* Botones de acción */}
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">
+        <Button type="button" variant="secondary" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button type="submit" variant="primary" iconLeft="check">
+          {esEdicion ? 'Actualizar Usuario' : 'Guardar Usuario'}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * Modal para creación y edición de usuarios institucionales.
+ *
+ * @param {Object} props
+ * @param {boolean} props.isOpen - Visibilidad del modal
+ * @param {Function} props.onClose - Manejador para cerrar el modal
+ * @param {Object} [props.initialData] - Datos del usuario a editar (opcional)
+ * @param {Function} [props.onSave] - Callback con los datos guardados
+ */
+export function UserFormModal({ isOpen, onClose, initialData = null, onSave }) {
+  const esEdicion = Boolean(initialData);
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Crear Nuevo Usuario Institucional"
-      description="Diligencie los datos oficiales para registrar un nuevo integrante en el padrón 2025."
+      title={esEdicion ? 'Editar Usuario Institucional' : 'Crear Nuevo Usuario Institucional'}
+      description={
+        esEdicion
+          ? 'Actualice los datos y asignaciones del usuario en el padrón 2025.'
+          : 'Diligencie los datos oficiales para registrar un nuevo integrante en el padrón 2025.'
+      }
     >
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        {/* Fila 1: Tipo y Número de documento */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field id="user-tipo-doc" label="Tipo de Documento" required>
-            <Select
-              id="user-tipo-doc"
-              name="tipo_doc"
-              value={formData.tipo_doc}
-              onChange={handleChange}
-              options={OPCIONES_TIPO_DOC}
-            />
-          </Field>
-
-          <Field
-            id="user-num-doc"
-            label="Número de Documento"
-            required
-            error={errores.num_doc}
-          >
-            <input
-              id="user-num-doc"
-              name="num_doc"
-              type="text"
-              inputMode="numeric"
-              placeholder="Ej. 1043921402"
-              value={formData.num_doc}
-              onChange={handleChange}
-              className={`w-full h-10 px-3.5 text-sm bg-surface rounded-[10px] border ${
-                errores.num_doc ? 'border-danger-line bg-danger-bg text-danger-fg' : 'border-line text-ink'
-              } focus-visible:outline-2 focus-visible:outline-brand-600`}
-            />
-          </Field>
-        </div>
-
-        {/* Fila 2: Nombres y Apellidos */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field id="user-nombres" label="Nombres" required error={errores.nombres}>
-            <input
-              id="user-nombres"
-              name="nombres"
-              type="text"
-              placeholder="Ej. Sofía Lucía"
-              value={formData.nombres}
-              onChange={handleChange}
-              className={`w-full h-10 px-3.5 text-sm bg-surface rounded-[10px] border ${
-                errores.nombres ? 'border-danger-line bg-danger-bg text-danger-fg' : 'border-line text-ink'
-              } focus-visible:outline-2 focus-visible:outline-brand-600`}
-            />
-          </Field>
-
-          <Field id="user-apellidos" label="Apellidos" required error={errores.apellidos}>
-            <input
-              id="user-apellidos"
-              name="apellidos"
-              type="text"
-              placeholder="Ej. Mendoza Silva"
-              value={formData.apellidos}
-              onChange={handleChange}
-              className={`w-full h-10 px-3.5 text-sm bg-surface rounded-[10px] border ${
-                errores.apellidos ? 'border-danger-line bg-danger-bg text-danger-fg' : 'border-line text-ink'
-              } focus-visible:outline-2 focus-visible:outline-brand-600`}
-            />
-          </Field>
-        </div>
-
-        {/* Fila 3: Rol y Curso */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field id="user-rol" label="Rol Institucional" required>
-            <Select
-              id="user-rol"
-              name="rol"
-              value={formData.rol}
-              onChange={handleChange}
-              options={OPCIONES_ROL}
-            />
-          </Field>
-
-          <Field id="user-curso" label="Curso o Grupo Asignado">
-            <Select
-              id="user-curso"
-              name="curso_id"
-              value={formData.curso_id}
-              onChange={handleChange}
-              options={OPCIONES_CURSO}
-              disabled={formData.rol === 'Administrador'}
-            />
-          </Field>
-        </div>
-
-        {/* Fila 4: Correo Electrónico */}
-        <Field id="user-correo" label="Correo Electrónico" required error={errores.correo}>
-          <input
-            id="user-correo"
-            name="correo"
-            type="email"
-            placeholder="usuario@iedlavictoria.edu.co"
-            value={formData.correo}
-            onChange={handleChange}
-            className={`w-full h-10 px-3.5 text-sm bg-surface rounded-[10px] border ${
-              errores.correo ? 'border-danger-line bg-danger-bg text-danger-fg' : 'border-line text-ink'
-            } focus-visible:outline-2 focus-visible:outline-brand-600`}
-          />
-        </Field>
-
-        {/* Botones de acción */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" variant="primary" iconLeft="check">
-            Guardar Usuario
-          </Button>
-        </div>
-      </form>
+      {isOpen && (
+        <UserFormContent
+          key={initialData ? initialData.id : 'nuevo'}
+          initialData={initialData}
+          onClose={onClose}
+          onSave={onSave}
+        />
+      )}
     </Modal>
   );
 }

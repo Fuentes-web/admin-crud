@@ -38,7 +38,7 @@ export function Button({
     soft:
       'bg-surface text-ink hover:bg-brand-100 active:bg-brand-200 border border-transparent',
     'danger-soft':
-      'bg-danger-bg text-danger-fg border border-danger-line hover:bg-red-100 active:bg-red-200',
+      'bg-danger-bg text-danger-fg border border-danger-line hover:bg-danger-line/60 active:bg-danger-line',
     ghost:
       'bg-transparent text-ink-2 hover:text-ink hover:bg-brand-50 border border-transparent',
   };

@@ -391,7 +391,7 @@ export function UsersPage() {
                             className={`text-xs px-2 py-1 rounded transition-colors focus-visible:outline-2 focus-visible:outline-brand-600 ${
                               esInactivo
                                 ? 'text-brand-700 hover:text-brand-800 font-semibold'
-                                : 'text-danger-fg hover:text-red-700 font-medium'
+                                : 'text-danger-fg hover:underline font-medium'
                             }`}
                           >
                             {esInactivo ? 'Activar' : 'Desactivar'}
